@@ -33,8 +33,9 @@ class Mystiebel extends utils.Adapter {
 
 		// The adapters config (in the instance object everything under the attribute "native") is accessible via
 		// this.config:
-		this.log.debug('config option1: ${this.config.option1}');
-		this.log.debug('config option2: ${this.config.option2}');
+		this.log.debug('config username: ${this.config.username}');
+		this.log.debug('config password: ${this.config.password}');
+		this.log.debug('config clientId: ${this.config.clientId}');
 
 		/*
 		For every state in the system there has to be also an object of type state
@@ -42,8 +43,8 @@ class Mystiebel extends utils.Adapter {
 		Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
 
 		IMPORTANT: State roles should be chosen carefully based on the state's purpose.
-		           Please refer to the state roles documentation for guidance:
-		           https://www.iobroker.net/#en/documentation/dev/stateroles.md
+				   Please refer to the state roles documentation for guidance:
+				   https://www.iobroker.net/#en/documentation/dev/stateroles.md
 		*/
 		await this.setObjectNotExistsAsync('testVariable', {
 			type: 'state',

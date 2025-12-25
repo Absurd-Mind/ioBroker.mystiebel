@@ -43,8 +43,12 @@
 			"uk": "mystiebel",
 			"zh-cn": "米斯蒂贝尔"
 		},
-		"authors": ["Absurd-Mind <github@myref.net>"],
-		"keywords": ["stiebel tecalor mystiebel app"],
+		"authors": [
+			"Absurd-Mind <github@myref.net>"
+		],
+		"keywords": [
+			"stiebel tecalor mystiebel app"
+		],
 		"licenseInformation": {
 			"type": "free",
 			"license": "Apache-2.0"
@@ -76,8 +80,9 @@
 		]
 	},
 	"native": {
-		"option1": true,
-		"option2": "42"
+		"username": "",
+		"password": "",
+		"clientId": ""
 	},
 	"objects": [],
 	"instanceObjects": [

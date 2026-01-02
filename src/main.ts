@@ -6,12 +6,15 @@
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
 import { MyStiebelAuth } from './lib/auth';
+import { ESSENTIAL_CONTROLS, ESSENTIAL_SENSORS } from './lib/const';
+import { MyStiebelWS } from './lib/websocket';
 
 // Load your modules here, e.g.:
 // import * as fs from 'fs';
 
 class Mystiebel extends utils.Adapter {
 	private auth: MyStiebelAuth | undefined;
+	private ws: MyStiebelWS | undefined;
 
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
@@ -106,6 +109,17 @@ class Mystiebel extends utils.Adapter {
 
 			const installations = await this.auth.getInstallations();
 			this.log.info(`Installations: ${JSON.stringify(installations)}`);
+
+			if (installations && installations.items && installations.items.length > 0) {
+				const installationId = installations.items[0].id;
+				this.log.info(`Using installation ID: ${installationId}`);
+
+				const fieldsToMonitor = [...ESSENTIAL_SENSORS, ...ESSENTIAL_CONTROLS];
+				this.ws = new MyStiebelWS(this.auth, String(installationId), fieldsToMonitor, this.log);
+				this.ws.start();
+			} else {
+				this.log.warn('No installations found!');
+			}
 		} catch (error) {
 			this.log.error(`Authentication failed: ${(error as Error).message}`);
 			await this.setState('info.connection', false, true);
@@ -119,6 +133,9 @@ class Mystiebel extends utils.Adapter {
 	 */
 	private onUnload(callback: () => void): void {
 		try {
+			if (this.ws) {
+				this.ws.stop();
+			}
 			// Here you must clear all timeouts or intervals that may still be active
 			// clearTimeout(timeout1);
 			// clearTimeout(timeout2);

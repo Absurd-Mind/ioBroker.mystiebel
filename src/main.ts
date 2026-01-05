@@ -15,6 +15,7 @@ import { MyStiebelWS } from './lib/websocket';
 class Mystiebel extends utils.Adapter {
 	private auth: MyStiebelAuth | undefined;
 	private ws: MyStiebelWS | undefined;
+	private activeInstallationId: string | undefined;
 
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
@@ -116,10 +117,17 @@ class Mystiebel extends utils.Adapter {
 				}
 
 				const installationId = installations.items[0].id;
+				this.activeInstallationId = String(installationId);
 				this.log.info(`Using installation ID: ${installationId}`);
 
 				const fieldsToMonitor = [...ESSENTIAL_SENSORS, ...ESSENTIAL_CONTROLS];
-				this.ws = new MyStiebelWS(this.auth, String(installationId), fieldsToMonitor, this.log);
+				this.ws = new MyStiebelWS(
+					this.auth,
+					String(installationId),
+					fieldsToMonitor,
+					this.log,
+					this.handleDataUpdate.bind(this),
+				);
 				this.ws.start();
 			} else {
 				this.log.warn('No installations found!');
@@ -245,7 +253,7 @@ class Mystiebel extends utils.Adapter {
 
 		for (const controlId of ESSENTIAL_CONTROLS) {
 			const def = CONTROL_DEFINITIONS[controlId];
-			await this.setObjectNotExistsAsync(`${deviceId}.controls.${controlId}`, {
+			await this.setObjectNotExistsAsync(`${deviceId}.controls.${def.id}`, {
 				type: 'state',
 				common: {
 					name: def.name,
@@ -259,6 +267,62 @@ class Mystiebel extends utils.Adapter {
 					registerIndex: controlId,
 				},
 			});
+		}
+	}
+
+	/**
+	 * Handles data updates from the WebSocket.
+	 *
+	 * @param data - Array of data objects containing registerIndex and value
+	 */
+	private async handleDataUpdate(data: any[]): Promise<void> {
+		if (!data || !Array.isArray(data) || !this.activeInstallationId) {
+			return;
+		}
+
+		for (const item of data) {
+			const registerIndex = item.registerIndex;
+			// The API might return 'value' or 'displayValue'
+			let value = item.value !== undefined ? item.value : item.displayValue;
+
+			if (value === undefined) {
+				continue;
+			}
+
+			if (ESSENTIAL_SENSORS.includes(registerIndex)) {
+				const def = SENSOR_DEFINITIONS[registerIndex];
+				if (def) {
+					if (def.type === 'number') {
+						value = parseFloat(value);
+						// Simple heuristic for temperature scaling if not handled by API
+						if (def.unit === '°C' && value > 100) {
+							value = value / 10;
+						}
+					} else if (def.type === 'boolean') {
+						value = value === '1' || value === 1 || value === 'true' || value === true;
+					}
+					await this.setState(`${this.activeInstallationId}.sensors.${def.id}`, {
+						val: value,
+						ack: true,
+					});
+				}
+			} else if (ESSENTIAL_CONTROLS.includes(registerIndex)) {
+				const def = CONTROL_DEFINITIONS[registerIndex];
+				if (def) {
+					if (def.type === 'number') {
+						value = parseFloat(value);
+						if (def.unit === '°C' && value > 100) {
+							value = value / 10;
+						}
+					} else if (def.type === 'boolean') {
+						value = value === '1' || value === 1 || value === 'true' || value === true;
+					}
+					await this.setState(`${this.activeInstallationId}.controls.${def.id}`, {
+						val: value,
+						ack: true,
+					});
+				}
+			}
 		}
 	}
 

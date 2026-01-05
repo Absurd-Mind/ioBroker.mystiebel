@@ -25,18 +25,27 @@ export class MyStiebelWS {
 	private isRunning: boolean = false;
 	private usedMessageIds: Set<number> = new Set();
 	private log: ioBroker.Logger;
+	private onDataUpdate: (data: any[]) => void;
 
 	/**
 	 * @param auth - Authenticated MyStiebelAuth instance
 	 * @param installationId - Installation ID to connect to
 	 * @param fieldsToMonitor - List of field indexes to monitor
 	 * @param log - Logger instance for logging messages
+	 * @param onDataUpdate - Callback function for data updates
 	 */
-	constructor(auth: MyStiebelAuth, installationId: string, fieldsToMonitor: number[], log: ioBroker.Logger) {
+	constructor(
+		auth: MyStiebelAuth,
+		installationId: string,
+		fieldsToMonitor: number[],
+		log: ioBroker.Logger,
+		onDataUpdate: (data: any[]) => void,
+	) {
 		this.auth = auth;
 		this.installationId = installationId;
 		this.fieldsToMonitor = fieldsToMonitor;
 		this.log = log;
+		this.onDataUpdate = onDataUpdate;
 	}
 
 	/**
@@ -144,11 +153,13 @@ export class MyStiebelWS {
 				this.requestInitialValues();
 			} else if (msg.result && msg.result.fields) {
 				this.log.debug(`Received initial data: ${msg.result.fields.length} fields`);
-				// TODO: Process initial data
+				this.onDataUpdate(msg.result.fields);
 				this.subscribeToUpdates();
 			} else if (msg.method === 'valuesChanged') {
 				this.log.debug(`Value update: ${JSON.stringify(msg.params)}`);
-				// TODO: Process update
+				if (msg.params) {
+					this.onDataUpdate([msg.params]);
+				}
 			}
 		} catch (error) {
 			this.log.error(`Error parsing message: ${error instanceof Error ? error.message : String(error)}`);

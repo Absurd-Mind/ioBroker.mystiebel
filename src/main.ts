@@ -6,7 +6,7 @@
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
 import { MyStiebelAuth } from './lib/auth';
-import { ESSENTIAL_CONTROLS, ESSENTIAL_SENSORS } from './lib/const';
+import { CONTROL_DEFINITIONS, ESSENTIAL_CONTROLS, ESSENTIAL_SENSORS, SENSOR_DEFINITIONS } from './lib/const';
 import { MyStiebelWS } from './lib/websocket';
 
 // Load your modules here, e.g.:
@@ -111,6 +111,10 @@ class Mystiebel extends utils.Adapter {
 			this.log.info(`Installations: ${JSON.stringify(installations)}`);
 
 			if (installations && installations.items && installations.items.length > 0) {
+				for (const installation of installations.items) {
+					await this.createInstallationObjects(installation);
+				}
+
 				const installationId = installations.items[0].id;
 				this.log.info(`Using installation ID: ${installationId}`);
 
@@ -123,6 +127,138 @@ class Mystiebel extends utils.Adapter {
 		} catch (error) {
 			this.log.error(`Authentication failed: ${(error as Error).message}`);
 			await this.setState('info.connection', false, true);
+		}
+	}
+
+	/**
+	 * Creates the ioBroker objects for an installation.
+	 *
+	 * @param installation - The installation data object
+	 */
+	private async createInstallationObjects(installation: any): Promise<void> {
+		const id = String(installation.id);
+		const name = installation.name || `Installation ${id}`;
+
+		// Create device object
+		await this.setObjectNotExistsAsync(id, {
+			type: 'device',
+			common: {
+				name: name,
+			},
+			native: {},
+		});
+
+		// Create info channel
+		await this.setObjectNotExistsAsync(`${id}.info`, {
+			type: 'channel',
+			common: {
+				name: 'Information',
+			},
+			native: {},
+		});
+
+		// Create info states
+		const infoStates = {
+			name: { name: 'Name', type: 'string', val: installation.name },
+			owner: {
+				name: 'Owner',
+				type: 'string',
+				val: `${installation.owner?.firstName} ${installation.owner?.lastName}`.trim(),
+			},
+			model: { name: 'Model', type: 'string', val: installation.profile?.name },
+			serialNumber: { name: 'Serial Number', type: 'string', val: installation.pid },
+			macAddress: { name: 'MAC Address', type: 'string', val: installation.macAddress },
+			firmwareVersion: {
+				name: 'Firmware Version',
+				type: 'string',
+				val: installation.firmware?.firmwareVersion,
+			},
+			isOnline: { name: 'Is Online', type: 'boolean', val: installation.isOnline },
+		};
+
+		for (const [key, def] of Object.entries(infoStates)) {
+			await this.setObjectNotExistsAsync(`${id}.info.${key}`, {
+				type: 'state',
+				common: {
+					name: def.name,
+					type: def.type as ioBroker.CommonType,
+					role: 'info',
+					read: true,
+					write: false,
+				},
+				native: {},
+			});
+			await this.setState(`${id}.info.${key}`, { val: def.val, ack: true });
+		}
+
+		// Create sensor/control objects if profile matches (e.g., WWK with ID 34)
+		// For now, we assume all supported devices have these essential fields
+		// In a real scenario, we might want to check installation.profile.id
+		if (installation.profile?.id === 34) {
+			await this.createEssentialObjects(id);
+		}
+	}
+
+	/**
+	 * Creates the essential sensor and control objects for a device.
+	 *
+	 * @param deviceId - The device ID (installation ID)
+	 */
+	private async createEssentialObjects(deviceId: string): Promise<void> {
+		// Create sensors channel
+		await this.setObjectNotExistsAsync(`${deviceId}.sensors`, {
+			type: 'channel',
+			common: {
+				name: 'Sensors',
+			},
+			native: {},
+		});
+
+		// Create controls channel
+		await this.setObjectNotExistsAsync(`${deviceId}.controls`, {
+			type: 'channel',
+			common: {
+				name: 'Controls',
+			},
+			native: {},
+		});
+
+		// We will create the actual states when we receive data, or we can pre-create them here
+		// For now, let's pre-create placeholders based on IDs so we can see them
+		for (const sensorId of ESSENTIAL_SENSORS) {
+			const def = SENSOR_DEFINITIONS[sensorId];
+			await this.setObjectNotExistsAsync(`${deviceId}.sensors.${def.id}`, {
+				type: 'state',
+				common: {
+					name: def.name,
+					type: def.type || 'number',
+					role: def.role || 'value',
+					unit: def.unit,
+					read: true,
+					write: false,
+				},
+				native: {
+					registerIndex: sensorId,
+				},
+			});
+		}
+
+		for (const controlId of ESSENTIAL_CONTROLS) {
+			const def = CONTROL_DEFINITIONS[controlId];
+			await this.setObjectNotExistsAsync(`${deviceId}.controls.${controlId}`, {
+				type: 'state',
+				common: {
+					name: def.name,
+					type: def.type || 'number',
+					role: def.role || 'value',
+					unit: def.unit,
+					read: true,
+					write: true,
+				},
+				native: {
+					registerIndex: controlId,
+				},
+			});
 		}
 	}
 

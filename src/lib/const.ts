@@ -23,25 +23,90 @@ export const MSG_ID_MAX = 9_999_999;
 export const MSG_ID_LONG_MIN = 1_000_000_000;
 export const MSG_ID_LONG_MAX = 9_999_999_999;
 
-// List of essential read-only sensors.
-// These will be enabled by default. All other sensor-type entities will be disabled by default.
-export const ESSENTIAL_SENSORS = [
-	15, // Dome Temperature
-	2378, // Current Target Temperature
-	2395, // Mixed Water Volume
-	2758, // Operating Mode
-	2388, // SG-Ready State
-	1111, // Compressor (state)
-	1116, // Heating Element (state)
-	1130, // Defrosting (state)
-];
+// Sensor Definitions
+export const SENSOR_DEFINITIONS: Record<
+	number,
+	{
+		id: string;
+		name: string;
+		unit?: string;
+		role: string;
+		type: ioBroker.CommonType;
+		write: boolean;
+	}
+> = {
+	15: {
+		id: 'dome_temperature',
+		name: 'Dome Temperature',
+		unit: '°C',
+		role: 'value.temperature',
+		type: 'number',
+		write: false,
+	},
+	2378: {
+		id: 'current_target_temperature',
+		name: 'Current Target Temperature',
+		unit: '°C',
+		role: 'value.temperature',
+		type: 'number',
+		write: false,
+	},
+	2395: {
+		id: 'mixed_water_volume',
+		name: 'Mixed Water Volume',
+		unit: 'l',
+		role: 'value',
+		type: 'number',
+		write: false,
+	},
+	2758: { id: 'operating_mode', name: 'Operating Mode', role: 'text', type: 'string', write: false },
+	2388: { id: 'sg_ready_state', name: 'SG-Ready State', role: 'value', type: 'number', write: false },
+	1111: { id: 'compressor', name: 'Compressor', role: 'indicator.state', type: 'boolean', write: false },
+	1116: { id: 'heating_element', name: 'Heating Element', role: 'indicator.state', type: 'boolean', write: false },
+	1130: { id: 'defrosting', name: 'Defrosting', role: 'indicator.state', type: 'boolean', write: false },
+};
 
-// List of essential control entities (switches, numbers, selects).
-// These will also be enabled by default. All other controls will be disabled.
-export const ESSENTIAL_CONTROLS = [
-	13, // Setpoint Temperature Comfort
-	14, // Setpoint Temperature Eco
-	2466, // Eco heating mode
-	2382, // Boost Request (Select)
-	2487, // Hot Water Plus Requested (Switch)
-];
+// Control Definitions
+export const CONTROL_DEFINITIONS: Record<
+	number,
+	{
+		id: string;
+		name: string;
+		unit?: string;
+		role: string;
+		type: ioBroker.CommonType;
+		write?: boolean;
+	}
+> = {
+	13: {
+		id: 'setpoint_temperature_comfort',
+		name: 'Setpoint Temperature Comfort',
+		unit: '°C',
+		role: 'level.temperature',
+		type: 'number',
+		write: true,
+	},
+	14: {
+		id: 'setpoint_temperature_eco',
+		name: 'Setpoint Temperature Eco',
+		unit: '°C',
+		role: 'level.temperature',
+		type: 'number',
+		write: true,
+	},
+	2466: { id: 'eco_heating_mode', name: 'Eco heating mode', role: 'switch', type: 'boolean', write: true },
+	2382: { id: 'boost_request', name: 'Boost Request', role: 'switch', type: 'boolean', write: true },
+	2487: {
+		id: 'hot_water_plus_requested',
+		name: 'Hot Water Plus Requested',
+		role: 'switch',
+		type: 'boolean',
+		write: true,
+	},
+};
+
+// List of essential read-only sensors.
+export const ESSENTIAL_SENSORS = Object.keys(SENSOR_DEFINITIONS).map(Number);
+
+// List of essential control entities.
+export const ESSENTIAL_CONTROLS = Object.keys(CONTROL_DEFINITIONS).map(Number);

@@ -33,29 +33,6 @@ class Mystiebel extends utils.Adapter {
 	 * Is called when databases are connected and adapter received configuration.
 	 */
 	private async onReady(): Promise<void> {
-		await this.setObjectNotExistsAsync('info.token', {
-			type: 'state',
-			common: {
-				name: 'Access Token',
-				type: 'string',
-				role: 'value',
-				read: true,
-				write: false,
-			},
-			native: {},
-		});
-		await this.setObjectNotExistsAsync('info.tokenExpiry', {
-			type: 'state',
-			common: {
-				name: 'Access Token Expiry',
-				type: 'string',
-				role: 'value',
-				read: true,
-				write: false,
-			},
-			native: {},
-		});
-
 		// Reset the connection indicator during startup
 		await this.setState('info.connection', false, true);
 
@@ -67,45 +44,11 @@ class Mystiebel extends utils.Adapter {
 			return;
 		}
 
-		// Try to load cached token
-		const tokenState = await this.getStateAsync('info.token');
-		const tokenExpiryState = await this.getStateAsync('info.tokenExpiry');
-		let cachedToken: string | undefined;
-		let cachedTokenExpiry: string | undefined;
-
-		if (tokenState && tokenState.val) {
-			this.log.debug('Found cached token');
-			cachedToken = tokenState.val as string;
-		}
-		if (tokenExpiryState && tokenExpiryState.val) {
-			cachedTokenExpiry = tokenExpiryState.val as string;
-		}
-
-		this.auth = new MyStiebelAuth(
-			this.log,
-			this.config.username,
-			this.config.password,
-			this.config.clientId,
-			cachedToken,
-			cachedTokenExpiry,
-		);
+		this.auth = new MyStiebelAuth(this.log, this.config.username, this.config.password, this.config.clientId);
 
 		try {
-			// This will use the cached token if valid, or authenticate if not
-			await this.auth.ensureValidToken();
-
-			// Save the token if it changed (or was just acquired)
-			const newToken = this.auth.getToken();
-			const newTokenExpiry = this.auth.getTokenExpiry();
-
-			if (newToken && (!tokenState || tokenState.val !== newToken)) {
-				await this.setState('info.token', { val: newToken, ack: true });
-				this.log.debug('Saved new token to state');
-			}
-			if (newTokenExpiry) {
-				await this.setState('info.tokenExpiry', { val: newTokenExpiry.toISOString(), ack: true });
-			}
-
+			// This will authenticate
+			await this.auth.authenticate();
 			await this.setState('info.connection', true, true);
 
 			const installations = await this.auth.getInstallations();

@@ -19,26 +19,13 @@ export class MyStiebelAuth {
 	 * @param username - Username for authentication
 	 * @param password - Password for authentication
 	 * @param clientId - Client ID for authentication
-	 * @param cachedToken - Optional cached token
-	 * @param cachedTokenExpiry - Optional cached token expiry date as ISO string
 	 */
-	constructor(
-		log: ioBroker.Logger,
-		username: string,
-		password: string,
-		clientId: string,
-		cachedToken?: string,
-		cachedTokenExpiry?: string,
-	) {
+	constructor(log: ioBroker.Logger, username: string, password: string, clientId: string) {
 		this.log = log;
 		this.username = username;
 		this.password = password;
 		this.clientId = clientId;
 		this.axiosInstance = axios.create();
-		if (cachedToken && cachedTokenExpiry) {
-			this.token = cachedToken;
-			this.tokenExpiry = new Date(cachedTokenExpiry);
-		}
 	}
 
 	/**

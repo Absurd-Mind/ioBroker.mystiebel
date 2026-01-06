@@ -20,6 +20,7 @@ export class MyStiebelWS {
 	private ws: WebSocket | null = null;
 	private auth: MyStiebelAuth;
 	private installationId: string;
+	private clientId: string;
 	private fieldsToMonitor: number[];
 	private reconnectDelay: number = WEBSOCKET_RECONNECT_INITIAL;
 	private isRunning: boolean = false;
@@ -30,6 +31,7 @@ export class MyStiebelWS {
 	/**
 	 * @param auth - Authenticated MyStiebelAuth instance
 	 * @param installationId - Installation ID to connect to
+	 * @param clientId - Client ID for identification
 	 * @param fieldsToMonitor - List of field indexes to monitor
 	 * @param log - Logger instance for logging messages
 	 * @param onDataUpdate - Callback function for data updates
@@ -37,12 +39,14 @@ export class MyStiebelWS {
 	constructor(
 		auth: MyStiebelAuth,
 		installationId: string,
+		clientId: string,
 		fieldsToMonitor: number[],
 		log: ioBroker.Logger,
 		onDataUpdate: (data: any[]) => void,
 	) {
 		this.auth = auth;
 		this.installationId = installationId;
+		this.clientId = clientId;
 		this.fieldsToMonitor = fieldsToMonitor;
 		this.log = log;
 		this.onDataUpdate = onDataUpdate;
@@ -195,6 +199,31 @@ export class MyStiebelWS {
 			params: {
 				installationId: this.installationId,
 				registerIndexes: this.fieldsToMonitor,
+			},
+		};
+		this.ws.send(JSON.stringify(msg));
+	}
+
+	/**
+	 * Sends a value update to the MyStiebel service.
+	 *
+	 * @param registerIndex - The register index to update
+	 * @param value - The new value
+	 */
+	public setValue(registerIndex: number, value: any): void {
+		if (!this.ws) {
+			return;
+		}
+
+		const msg = {
+			jsonrpc: '2.0',
+			id: this.generateMessageId(true),
+			method: 'setValues',
+			params: {
+				installationId: this.installationId,
+				UUID: this.clientId,
+				listenWithValuesChanged: true,
+				fields: [{ registerIndex: registerIndex, displayValue: String(value) }],
 			},
 		};
 		this.ws.send(JSON.stringify(msg));

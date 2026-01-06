@@ -124,6 +124,7 @@ class Mystiebel extends utils.Adapter {
 				this.ws = new MyStiebelWS(
 					this.auth,
 					String(installationId),
+					this.config.clientId,
 					fieldsToMonitor,
 					this.log,
 					this.handleDataUpdate.bind(this),
@@ -136,6 +137,9 @@ class Mystiebel extends utils.Adapter {
 			this.log.error(`Authentication failed: ${(error as Error).message}`);
 			await this.setState('info.connection', false, true);
 		}
+
+		// Subscribe to all control states
+		this.subscribeStates('*.controls.*');
 	}
 
 	/**
@@ -294,10 +298,6 @@ class Mystiebel extends utils.Adapter {
 				if (def) {
 					if (def.type === 'number') {
 						value = parseFloat(value);
-						// Simple heuristic for temperature scaling if not handled by API
-						if (def.unit === '°C' && value > 100) {
-							value = value / 10;
-						}
 					} else if (def.type === 'boolean') {
 						value = value === '1' || value === 1 || value === 'true' || value === true;
 					}
@@ -311,9 +311,6 @@ class Mystiebel extends utils.Adapter {
 				if (def) {
 					if (def.type === 'number') {
 						value = parseFloat(value);
-						if (def.unit === '°C' && value > 100) {
-							value = value / 10;
-						}
 					} else if (def.type === 'boolean') {
 						value = value === '1' || value === 1 || value === 'true' || value === true;
 					}
@@ -371,22 +368,52 @@ class Mystiebel extends utils.Adapter {
 	 * @param state - State object
 	 */
 	private onStateChange(id: string, state: ioBroker.State | null | undefined): void {
-		if (state) {
-			// The state was changed
-			this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
-
-			if (state.ack === false) {
-				// This is a command from the user (e.g., from the UI or other adapter)
-				// and should be processed by the adapter
-				this.log.info(`User command received for ${id}: ${state.val}`);
-
-				// TODO: Add your control logic here
-			}
-		} else {
+		if (!state) {
 			// The object was deleted or the state value has expired
 			this.log.info(`state ${id} deleted`);
+			return;
 		}
+
+		if (state.ack !== false) {
+			return;
+		}
+
+		this.log.info(`User command received for ${id}: ${state.val}`);
+
+		if (!id.includes('.controls.') || !this.ws || !this.activeInstallationId) {
+			return;
+		}
+
+		const parts = id.split('.');
+		const controlName = parts[parts.length - 1];
+
+		const registerIndex = this.extractRegisterIndex(controlName);
+		if (registerIndex === undefined) {
+			this.log.warn(`Could not find register index for control ${controlName}`);
+			return;
+		}
+
+		let value = state.val;
+
+		const def = CONTROL_DEFINITIONS[registerIndex];
+		if (def && def.type === 'boolean') {
+			// Convert boolean to string/number as expected by API
+			// Based on Python code, it seems to send strings
+			value = value ? '1' : '0';
+		}
+
+		this.ws.setValue(registerIndex, value);
 	}
+
+	private extractRegisterIndex(controlName: string): number | undefined {
+		for (const [key, def] of Object.entries(CONTROL_DEFINITIONS)) {
+			if (def.id === controlName) {
+				return Number(key);
+			}
+		}
+		return undefined;
+	}
+
 	// If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
 	// /**
 	//  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...

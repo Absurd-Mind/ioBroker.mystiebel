@@ -1,5 +1,6 @@
 {
-	"mystiebel adapter settings": "Adapter settings for mystiebel",
-	"option1": "option1",
-	"option2": "option2"
+    "mystiebel adapter settings": "Adapter settings for MyStiebel",
+    "Username": "MyStiebel Username (Email)",
+    "Password": "Password",
+    "Client ID": "Client ID (optional)"
 }

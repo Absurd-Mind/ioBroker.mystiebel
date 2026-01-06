@@ -31,17 +31,17 @@
 			"zh-cn": "我的斯蒂贝尔"
 		},
 		"desc": {
-			"en": "mystiebel",
-			"de": "mystiebel",
-			"ru": "мистибель",
-			"pt": "mystibel",
-			"nl": "mysterieus",
-			"fr": "mystiebel",
-			"it": "mystiebel",
-			"es": "mistiebel",
-			"pl": "mystiebel",
-			"uk": "mystiebel",
-			"zh-cn": "米斯蒂贝尔"
+			"en": "Adapter for Stiebel Eltron MyStiebel heat pumps",
+			"de": "Adapter für Stiebel Eltron MyStiebel Wärmepumpen",
+			"ru": "Адаптер для тепловых насосов Stiebel Eltron MyStiebel",
+			"pt": "Adaptador para bombas de calor Stiebel Eltron MyStiebel",
+			"nl": "Adapter voor Stiebel Eltron MyStiebel warmtepompen",
+			"fr": "Adaptateur pour pompes à chaleur Stiebel Eltron MyStiebel",
+			"it": "Adattatore per pompe di calore Stiebel Eltron MyStiebel",
+			"es": "Adaptador para bombas de calor Stiebel Eltron MyStiebel",
+			"pl": "Adapter do pomp ciepła Stiebel Eltron MyStiebel",
+			"uk": "Адаптер для теплових насосів Stiebel Eltron MyStiebel",
+			"zh-cn": "Stiebel Eltron MyStiebel 热泵适配器"
 		},
 		"authors": [
 			"Absurd-Mind <github@myref.net>"
@@ -64,7 +64,7 @@
 		"type": "climate-control",
 		"compact": true,
 		"connectionType": "cloud",
-		"dataSource": "poll",
+		"dataSource": "push",
 		"adminUI": {
 			"config": "json"
 		},

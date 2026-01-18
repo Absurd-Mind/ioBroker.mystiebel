@@ -27,11 +27,29 @@ export const MSG_ID_LONG_MAX = 9_999_999_999;
 export const SENSOR_DEFINITIONS: Record<
 	number,
 	{
+		/**
+		 * Unique identifier for the sensor
+		 */
 		id: string;
+		/**
+		 * Human-readable name of the sensor
+		 */
 		name: string;
+		/**
+		 * Unit of measurement for the sensor
+		 */
 		unit?: string;
+		/**
+		 * Role of the sensor in the system
+		 */
 		role: string;
+		/**
+		 * Data type of the sensor value
+		 */
 		type: ioBroker.CommonType;
+		/**
+		 * Indicates if the sensor is writable
+		 */
 		write: boolean;
 	}
 > = {

@@ -73,12 +73,12 @@ export const SENSOR_DEFINITIONS: Record<
 		id: 'mixed_water_volume',
 		name: 'Mixed Water Volume',
 		unit: 'l',
-		role: 'value',
+		role: 'value.volume',
 		type: 'number',
 		write: false,
 	},
 	2758: { id: 'operating_mode', name: 'Operating Mode', role: 'text', type: 'string', write: false },
-	2388: { id: 'sg_ready_state', name: 'SG-Ready State', role: 'value', type: 'number', write: false },
+	2388: { id: 'sg_ready_state', name: 'SG-Ready State', role: 'value.state', type: 'number', write: false },
 	1111: { id: 'compressor', name: 'Compressor', role: 'indicator.state', type: 'boolean', write: false },
 	1116: { id: 'heating_element', name: 'Heating Element', role: 'indicator.state', type: 'boolean', write: false },
 	1130: { id: 'defrosting', name: 'Defrosting', role: 'indicator.state', type: 'boolean', write: false },
@@ -88,12 +88,30 @@ export const SENSOR_DEFINITIONS: Record<
 export const CONTROL_DEFINITIONS: Record<
 	number,
 	{
+		/**
+		 * Unique identifier for the control
+		 */
 		id: string;
+		/**
+		 * Human-readable name of the control
+		 */
 		name: string;
+		/**
+		 * Unit of measurement for the control
+		 */
 		unit?: string;
+		/**
+		 * Role of the control in the system
+		 */
 		role: string;
+		/**
+		 * Data type of the control value
+		 */
 		type: ioBroker.CommonType;
-		write?: boolean;
+		/**
+		 * Indicates if the control is writable
+		 */
+		write: boolean;
 	}
 > = {
 	13: {

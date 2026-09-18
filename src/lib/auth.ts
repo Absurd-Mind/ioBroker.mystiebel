@@ -1,6 +1,14 @@
 import type { AxiosInstance } from 'axios';
 import axios from 'axios';
-import { APP_NAME, APP_VERSION_ANDROID, BASE_URL, SERVICE_URL, TOKEN_REFRESH_MARGIN, USER_AGENT } from './const';
+import {
+	APP_NAME,
+	APP_VERSION_ANDROID,
+	BASE_URL,
+	SERVICE_URL,
+	TOKEN_REFRESH_MARGIN,
+	TOKEN_REFRESH_RATIO,
+	USER_AGENT,
+} from './const';
 
 /**
  * Authentication handler for MyStiebel service. Manages login, token storage, and token refresh.
@@ -12,6 +20,7 @@ export class MyStiebelAuth {
 	private clientId: string;
 	private token: string | null = null;
 	private tokenExpiry: Date | null = null;
+	private tokenRefreshAt: Date | null = null;
 	private axiosInstance: AxiosInstance;
 
 	/**
@@ -56,11 +65,16 @@ export class MyStiebelAuth {
 				throw new Error('Authentication succeeded but no token was received ');
 			}
 
-			this.tokenExpiry = this.parseTokenExpiry(this.token);
-			if (!this.tokenExpiry) {
+			const claims = this.parseTokenClaims(this.token);
+			if (!claims) {
 				throw new Error(`Authentication succeeded but token expiry could not be determined`);
 			}
-			this.log.debug('Authentication successful');
+
+			this.tokenExpiry = claims.expiry;
+			this.tokenRefreshAt = this.calculateRefreshTime(claims.issuedAt, claims.expiry);
+			this.log.debug(
+				`Authentication successful, token expires at ${this.tokenExpiry.toISOString()}, refresh due at ${this.tokenRefreshAt.toISOString()}`,
+			);
 		} catch (error) {
 			throw new Error(`Authentication failed: ${error instanceof Error ? error.message : String(error)}`);
 		}
@@ -97,16 +111,16 @@ export class MyStiebelAuth {
 	 * Ensures that the token is valid, refreshing it if necessary.
 	 */
 	public async ensureValidToken(): Promise<void> {
-		if (!this.token || !this.tokenExpiry) {
+		if (!this.token || !this.tokenRefreshAt) {
 			this.log.debug('No token or token expiry found, authenticating...');
 			await this.authenticate();
 			return;
 		}
 
-		const timeUntilExpiry = (this.tokenExpiry.getTime() - Date.now()) / 1000;
-		if (timeUntilExpiry <= TOKEN_REFRESH_MARGIN) {
-			this.log.debug('Token is expiring soon, re-authenticating...');
+		if (Date.now() >= this.tokenRefreshAt.getTime()) {
+			this.log.debug('Token reached its refresh time, re-authenticating...');
 			await this.authenticate();
+			return;
 		}
 		this.log.debug('Token is valid');
 	}
@@ -126,11 +140,33 @@ export class MyStiebelAuth {
 	}
 
 	/**
-	 * Parses the JWT token to extract the expiry date.
+	 * Returns the point in time at which the current token should be renewed.
+	 */
+	public getTokenRefreshAt(): Date | null {
+		return this.tokenRefreshAt;
+	}
+
+	/**
+	 * Determines when a token has to be renewed: after 80% of its lifetime, but never later than
+	 * TOKEN_REFRESH_MARGIN seconds before the actual expiry.
+	 *
+	 * @param issuedAt - Time the token was issued
+	 * @param expiry - Time the token expires
+	 */
+	private calculateRefreshTime(issuedAt: Date, expiry: Date): Date {
+		const lifetime = expiry.getTime() - issuedAt.getTime();
+		const latestRefresh = expiry.getTime() - TOKEN_REFRESH_MARGIN * 1000;
+		const refreshAt = issuedAt.getTime() + lifetime * TOKEN_REFRESH_RATIO;
+
+		return new Date(Math.min(refreshAt, latestRefresh));
+	}
+
+	/**
+	 * Parses the JWT token to extract the issue and expiry dates.
 	 *
 	 * @param token - The JWT token
 	 */
-	private parseTokenExpiry(token: string): Date | null {
+	private parseTokenClaims(token: string): { issuedAt: Date; expiry: Date } | null {
 		try {
 			const payloadBase64 = token.split('.')[1];
 			if (!payloadBase64) {
@@ -143,7 +179,9 @@ export class MyStiebelAuth {
 				return null;
 			}
 
-			return new Date(payload.exp * 1000);
+			// Tokens without an `iat` claim are treated as if they had just been issued
+			const issuedAt = payload.iat ? new Date(payload.iat * 1000) : new Date();
+			return { issuedAt, expiry: new Date(payload.exp * 1000) };
 		} catch {
 			return null;
 		}

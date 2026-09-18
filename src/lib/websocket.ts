@@ -24,6 +24,7 @@ export class MyStiebelWS {
 	private fieldsToMonitor: number[];
 	private reconnectDelay: number = WEBSOCKET_RECONNECT_INITIAL;
 	private isRunning: boolean = false;
+	private tokenRefreshTimer: NodeJS.Timeout | null = null;
 	private usedMessageIds: Set<number> = new Set();
 	private log: ioBroker.Logger;
 	private onDataUpdate: (data: any[]) => void;
@@ -65,6 +66,7 @@ export class MyStiebelWS {
 	 */
 	public stop(): void {
 		this.isRunning = false;
+		this.clearTokenRefreshTimer();
 		if (this.ws) {
 			this.ws.close();
 			this.ws = null;
@@ -96,6 +98,7 @@ export class MyStiebelWS {
 			this.ws.on('open', () => {
 				this.log.info('WebSocket connected');
 				this.reconnectDelay = WEBSOCKET_RECONNECT_INITIAL;
+				this.scheduleTokenRefresh();
 				this.sendLogin(token);
 			});
 
@@ -109,11 +112,43 @@ export class MyStiebelWS {
 
 			this.ws.on('close', () => {
 				this.log.info('WebSocket closed');
+				this.clearTokenRefreshTimer();
 				this.handleReconnect();
 			});
 		} catch (error) {
 			this.log.error(`Connection failed: ${error instanceof Error ? error.message : String(error)}`);
 			this.handleReconnect();
+		}
+	}
+
+	/**
+	 * Closes the connection once the token reaches its refresh time, so that the reconnect
+	 * picks up a freshly issued token before the current one expires.
+	 */
+	private scheduleTokenRefresh(): void {
+		this.clearTokenRefreshTimer();
+
+		const refreshAt = this.auth.getTokenRefreshAt();
+		if (!refreshAt) {
+			return;
+		}
+
+		const delay = Math.max(refreshAt.getTime() - Date.now(), 0);
+		this.log.debug(`Scheduling token refresh in ${Math.round(delay / 1000)} seconds`);
+
+		this.tokenRefreshTimer = setTimeout(() => {
+			this.tokenRefreshTimer = null;
+			this.log.info('Token refresh due, reconnecting WebSocket with a new token');
+			if (this.ws) {
+				this.ws.close();
+			}
+		}, delay);
+	}
+
+	private clearTokenRefreshTimer(): void {
+		if (this.tokenRefreshTimer) {
+			clearTimeout(this.tokenRefreshTimer);
+			this.tokenRefreshTimer = null;
 		}
 	}
 

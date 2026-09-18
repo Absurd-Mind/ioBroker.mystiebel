@@ -1,8 +1,21 @@
 {
 	"common": {
 		"name": "mystiebel",
-		"version": "0.0.1",
+		"version": "0.0.2",
 		"news": {
+			"0.0.2": {
+				"en": "Token is now renewed after 80% of its lifetime instead of shortly before expiry\nWebSocket reconnects with a fresh token before the old one expires\nUpdated dependencies",
+				"de": "Token wird jetzt nach 80 % der Gültigkeitsdauer erneuert statt kurz vor Ablauf\nWebSocket verbindet sich mit einem neuen Token neu, bevor das alte abläuft\nAbhängigkeiten aktualisiert",
+				"ru": "Токен теперь обновляется после 80% срока действия, а не незадолго до истечения\nWebSocket переподключается с новым токеном до истечения старого\nОбновлены зависимости",
+				"pt": "O token agora é renovado após 80% da sua validade, em vez de pouco antes de expirar\nO WebSocket reconecta com um token novo antes de o antigo expirar\nDependências atualizadas",
+				"nl": "Token wordt nu na 80% van de geldigheidsduur vernieuwd in plaats van vlak voor het verlopen\nWebSocket maakt opnieuw verbinding met een nieuw token voordat het oude verloopt\nAfhankelijkheden bijgewerkt",
+				"fr": "Le jeton est désormais renouvelé après 80 % de sa durée de validité au lieu de juste avant son expiration\nLe WebSocket se reconnecte avec un nouveau jeton avant l'expiration de l'ancien\nDépendances mises à jour",
+				"it": "Il token viene ora rinnovato dopo l'80% della sua validità invece che poco prima della scadenza\nIl WebSocket si riconnette con un nuovo token prima che quello vecchio scada\nDipendenze aggiornate",
+				"es": "El token ahora se renueva tras el 80 % de su validez en lugar de poco antes de caducar\nEl WebSocket se reconecta con un token nuevo antes de que caduque el anterior\nDependencias actualizadas",
+				"pl": "Token jest teraz odnawiany po 80% czasu ważności, a nie tuż przed wygaśnięciem\nWebSocket łączy się ponownie z nowym tokenem, zanim stary wygaśnie\nZaktualizowano zależności",
+				"uk": "Токен тепер оновлюється після 80% терміну дії, а не незадовго до закінчення\nWebSocket перепідключається з новим токеном до завершення дії старого\nОновлено залежності",
+				"zh-cn": "令牌现在在有效期的 80% 后更新，而不是在即将过期时更新\n在旧令牌过期前，WebSocket 会使用新令牌重新连接\n已更新依赖项"
+			},
 			"0.0.1": {
 				"en": "initial release",
 				"de": "Erstveröffentlichung",

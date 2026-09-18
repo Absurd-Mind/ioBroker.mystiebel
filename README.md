@@ -50,6 +50,11 @@ You need to register an account at [MyStiebel](https://www.mystiebel.com/) and p
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.0.2 (2026-09-18)
+* (Absurd-Mind) Token is now renewed after 80% of its lifetime instead of shortly before expiry.
+* (Absurd-Mind) WebSocket reconnects with a fresh token before the old one expires.
+* (Absurd-Mind) Updated dependencies.
+
 ### 0.0.1 (2026-01-05)
 * (Absurd-Mind) Initial release.
 * (Absurd-Mind) Added WebSocket support.

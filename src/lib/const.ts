@@ -14,7 +14,8 @@ export const USER_AGENT = `${APP_NAME}/2.3.0 Dalvik/2.1.0`;
 export const WEBSOCKET_HEARTBEAT = 30; // seconds
 export const WEBSOCKET_RECONNECT_INITIAL = 5; // seconds
 export const WEBSOCKET_RECONNECT_MAX = 300; // 5 minutes
-export const TOKEN_REFRESH_MARGIN = 300; // Refresh token 5 minutes before expiry
+export const TOKEN_REFRESH_MARGIN = 300; // Latest possible refresh: 5 minutes before expiry
+export const TOKEN_REFRESH_RATIO = 0.8; // Refresh token after 80% of its lifetime
 export const API_RATE_LIMIT_DELAY = 1; // Minimum seconds between API calls
 
 // Message ID Range

@@ -85,3 +85,94 @@ describe('MyStiebelAuth API Error Handling', () => {
 		}
 	});
 });
+
+describe('MyStiebelAuth Token Refresh', () => {
+	let auth: MyStiebelAuth;
+	let mockAxios: MockAdapter;
+
+	/**
+	 * Builds a JWT-like token with the given lifetime.
+	 *
+	 * @param issuedAt - Issue time in seconds since epoch
+	 * @param expiresAt - Expiry time in seconds since epoch
+	 */
+	function createToken(issuedAt: number | undefined, expiresAt: number): string {
+		const payload: Record<string, number> = { exp: expiresAt };
+		if (issuedAt !== undefined) {
+			payload.iat = issuedAt;
+		}
+		return `header.${Buffer.from(JSON.stringify(payload)).toString('base64')}.signature`;
+	}
+
+	beforeEach(() => {
+		const loggerMock = Mock.from<ioBroker.Logger>({
+			debug: () => { },
+			error: () => { },
+			info: () => { },
+			warn: () => { },
+		});
+		auth = new MyStiebelAuth(loggerMock, 'testuser', 'testpass', 'testclientid');
+		mockAxios = new MockAdapter((auth as any).axiosInstance);
+	});
+
+	afterEach(() => {
+		mockAxios.restore();
+	});
+
+	it('should schedule the refresh after 80% of the token lifetime', async () => {
+		const issuedAt = Math.floor(Date.now() / 1000);
+		const expiresAt = issuedAt + 15 * 3600;
+		mockAxios.onPost().reply(200, { token: createToken(issuedAt, expiresAt) });
+
+		await auth.authenticate();
+
+		const refreshAt = auth.getTokenRefreshAt();
+		expect(refreshAt).to.not.be.null;
+		expect(refreshAt!.getTime()).to.equal((issuedAt + 12 * 3600) * 1000);
+		expect(auth.getTokenExpiry()!.getTime()).to.equal(expiresAt * 1000);
+	});
+
+	it('should never schedule the refresh closer than the safety margin to the expiry', async () => {
+		const issuedAt = Math.floor(Date.now() / 1000);
+		const expiresAt = issuedAt + 600; // 80% would be only 120s before expiry
+		mockAxios.onPost().reply(200, { token: createToken(issuedAt, expiresAt) });
+
+		await auth.authenticate();
+
+		expect(auth.getTokenRefreshAt()!.getTime()).to.equal((expiresAt - 300) * 1000);
+	});
+
+	it('should fall back to the current time when the token has no iat claim', async () => {
+		const expiresAt = Math.floor(Date.now() / 1000) + 15 * 3600;
+		mockAxios.onPost().reply(200, { token: createToken(undefined, expiresAt) });
+
+		await auth.authenticate();
+
+		const expectedRefreshAt = Date.now() + 12 * 3600 * 1000;
+		expect(auth.getTokenRefreshAt()!.getTime()).to.be.closeTo(expectedRefreshAt, 5000);
+	});
+
+	it('should not re-authenticate while the refresh time has not been reached', async () => {
+		const issuedAt = Math.floor(Date.now() / 1000);
+		mockAxios.onPost().reply(200, { token: createToken(issuedAt, issuedAt + 15 * 3600) });
+
+		await auth.authenticate();
+		const callsAfterLogin = mockAxios.history.post.length;
+
+		await auth.ensureValidToken();
+
+		expect(mockAxios.history.post.length).to.equal(callsAfterLogin);
+	});
+
+	it('should re-authenticate once the refresh time has passed', async () => {
+		const issuedAt = Math.floor(Date.now() / 1000) - 13 * 3600;
+		mockAxios.onPost().reply(200, { token: createToken(issuedAt, issuedAt + 15 * 3600) });
+
+		await auth.authenticate();
+		const callsAfterLogin = mockAxios.history.post.length;
+
+		await auth.ensureValidToken();
+
+		expect(mockAxios.history.post.length).to.equal(callsAfterLogin + 1);
+	});
+});

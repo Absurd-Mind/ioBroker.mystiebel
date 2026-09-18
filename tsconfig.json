@@ -8,6 +8,9 @@
 		// the compilation is configured in tsconfig.build.json
 		"noEmit": true,
 
+		// @tsconfig/node22 restricts this to ["node"], which would drop the test runner globals
+		"types": ["node", "mocha"],
+
 		// check JS files, but do not compile them => tsconfig.build.json
 		"allowJs": true,
 		"checkJs": true,

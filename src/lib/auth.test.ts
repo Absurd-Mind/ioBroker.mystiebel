@@ -11,10 +11,10 @@ describe('MyStiebelAuth API Error Handling', () => {
 	beforeEach(() => {
 		// Mock Logger
 		loggerMock = Mock.from<ioBroker.Logger>({
-			debug: () => { },
-			error: () => { },
-			info: () => { },
-			warn: () => { },
+			debug: () => {},
+			error: () => {},
+			info: () => {},
+			warn: () => {},
 		});
 
 		// Setup Auth instance with mocked axios via internal property access or by intercepting axios.create
@@ -106,10 +106,10 @@ describe('MyStiebelAuth Token Refresh', () => {
 
 	beforeEach(() => {
 		const loggerMock = Mock.from<ioBroker.Logger>({
-			debug: () => { },
-			error: () => { },
-			info: () => { },
-			warn: () => { },
+			debug: () => {},
+			error: () => {},
+			info: () => {},
+			warn: () => {},
 		});
 		auth = new MyStiebelAuth(loggerMock, 'testuser', 'testpass', 'testclientid');
 		mockAxios = new MockAdapter((auth as any).axiosInstance);
